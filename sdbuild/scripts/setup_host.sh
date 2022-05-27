@@ -8,6 +8,15 @@ script_dir=$(cd $(dirname ${BASH_SOURCE[0]}) && pwd)
 
 # Install a bunch of packages we need
 
+if [ $(lsb_release -rs) == "18.04" ]; then
+    rel_deps="libncurses5-dev lib32ncurses5"
+elif [ $(lsb_release -rs) == "20.04" ]; then
+    rel_deps="libncurses6 lib32ncurses6"
+else
+    echo "Error: Please use Ubuntu 20.04 or Ubuntu 18.04."
+    exit 1
+fi
+
 read -d '' PACKAGES <<EOT
 bc
 libtool-bin
@@ -30,7 +39,6 @@ binfmt-support
 multistrap
 git
 lib32z1
-lib32ncurses5
 lib32stdc++6
 libssl-dev
 kpartx
@@ -53,7 +61,6 @@ zlib1g:i386
 unzip
 rsync
 python3-pip
-python-minimal
 gcc-multilib
 xterm
 net-tools
@@ -62,16 +69,6 @@ EOT
 set -e
 
 sudo apt-get update
-
-if [[ $(lsb_release -rs) == "16.04" ]]; then
-    echo "Install packages on Ubuntu 16.04..."
-    sudo apt purge -y libgnutls-dev
-elif [[ $(lsb_release -rs) == "18.04" ]]; then
-    echo "Install packages on Ubuntu 18.04..."
-else
-    echo "Error: current OS not supported."
-    exit 1
-fi
 
 # Setup docker and containerd using repository before installing them
 sudo apt-get install -y \
@@ -109,20 +106,20 @@ ctver="1.24.0"
 wget http://crosstool-ng.org/download/crosstool-ng/crosstool-ng-$ctver.tar.bz2
 tar -xf crosstool-ng-$ctver.tar.bz2
 cd crosstool-ng-$ctver
-./configure --prefix=/opt/crosstool-ng
+./configure --prefix=/usr/bin/crosstool-ng
 make
 sudo make install
 cd ..
 
-qemuver="4.0.0"
-wget http://wiki.qemu-project.org/download/qemu-$qemuver.tar.bz2
+qemuver="6.2.0"
+wget http://wiki.qemu-project.org/download/qemu-$qemuver.tar.bz2 --no-check-certificate
 tar -xf qemu-$qemuver.tar.bz2
 cd qemu-$qemuver
 ./configure --target-list=arm-linux-user,aarch64-linux-user \
-	--prefix=/opt/qemu --static
+	--prefix=/usr/bin/qemu --static
 make && sudo make install
 # Create the symlink that ubuntu expects
-cd /opt/qemu/bin
+cd /usr/bin/qemu/bin
 sudo rm -rf qemu-arm-static qemu-aarch64-static
 sudo ln -s qemu-arm qemu-arm-static
 sudo ln -s qemu-aarch64 qemu-aarch64-static
@@ -142,11 +139,11 @@ if [ ! -f /run/systemd/resolve/stub-resolv.conf ]; then
 fi
 
 # update setuptools
-sudo -H pip3 install --upgrade "setuptools>=24.2.0"
+sudo -H python3 -m pip install --upgrade "setuptools>=24.2.0"
 # install dependencies required to build pynq sdist
-sudo -H pip3 install numpy cffi
+sudo -H python3 -m pip install numpy cffi
 
-echo 'PATH=/opt/qemu/bin:/opt/crosstool-ng/bin:$PATH' >> ~/.profile
+echo 'PATH=/usr/bin/qemu/bin:/usr/bin/crosstool-ng/bin:$PATH' >> ~/.profile
 
 echo "Now install Vitis and Petalinux."
 echo "Re-login to  ensure the environment is properly set up."
