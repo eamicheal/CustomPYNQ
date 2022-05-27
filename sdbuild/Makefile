@@ -6,7 +6,7 @@ VERSION := 2.7.0
 
 KERNEL_VERSION := 2020.2
 LINUX_VERSION := 5.4.0-xilinx-v2020.2
-QEMU_VERSION := 5.2.0
+QEMU_VERSION := 6.2.0
 SCRIPT_DIR := $(CURDIR)/scripts
 SHELL := /bin/bash
 
